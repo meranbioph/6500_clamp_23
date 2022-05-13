@@ -28,7 +28,7 @@ cd ${0%/*} || exit 1  # Run from this directory
 loopi=174 # see above. [= row 347 in the new system. When loopi = 174, the last completed U loop = 346]
 
 # Start loop
-while [ $loopi -le 430 ]                  # Number of loops = hours / 4, 96 = day
+while [ $loopi -le 549 ]                  # Number of loops = hours / 4, 96 = day
 do
   # to find C4. NR is the line number (there is a header, so the 4 of C4 is row 5), $4 is the fourth column. How to reference the right file...
   wtw=$(awk -F ";" -v loopj="$(($loopi*2-1))" '{if(NR==loopj) print $6;}' ./data/clamp_23_DataTable.csv)
