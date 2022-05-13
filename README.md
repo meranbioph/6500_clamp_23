@@ -4,7 +4,7 @@ Mesh: super coarse mesh (2730 cells)
 OpenFOAM version: 9
 Solver: clampPimpleFoam v6 and pimpleFoam
 
-A time series from earlier in the season, with higher temperatures.
+A time series from earlier in the season, with higher temperatures. 2011-11-18 06:15:00 to 2011-11-23 23:00:00
 0/Tf and 0/Ts are not the same, but 0/Ts is consistent at points _1, _2, and _7.
 A new probe at 5 cm from the top of the clamp has been added (4.5 2.95 0.05)
 
