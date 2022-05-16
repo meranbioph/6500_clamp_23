@@ -52,15 +52,6 @@ runApplication setFields -case ./clamp_23_02/clamp_23_02_rtl
 rm ./log.setFields
 
 ###############################
-# Prepare a U & p field for when U inlet = 0
-cp -r ./clamp_23_01/system/controlDict_zero ./clamp_23_01/clamp_23_01_ltr/system/controlDict
-rm ./clamp_23_01/clamp_23_01_ltr/0/U
-mv ./clamp_23_01/clamp_23_01_ltr/0/U_zero ./clamp_23_01/clamp_23_01_ltr/0/U
-runApplication pimpleFoam -case ./clamp_23_01/clamp_23_01_ltr
-mv ./clamp_23_01/clamp_23_01_ltr/360 ./clamp_23_01/zero
-rm ./log.pimpleFoam
-
-###############################
 # first loop of the paired cases
 
 wtw="ltr"
@@ -98,58 +89,41 @@ do
   # to find C4. NR is the line number (there is a header, so the 4 of C4 is row 5), $4 is the fourth column. How to reference the right file...
   wtw=$(awk -F ";" -v loopj="$(($loopi*2-1))" '{if(NR==loopj) print $6;}' ./data/clamp_23_DataTable.csv)
 
-  # Take pre-solved field if U=0
-  if $( awk -F ";" -v loopj="$(($loopi*2-1))" '{if(NR==loopj) print $9;}' ./data/clamp_23_DataTable.csv )
+  # if wtw is same, take latest pU file to right subsubfolder. Otherwise, take 0_orig. I DON'T THINK THAT THIS IS ACTUALLY NEEDED... (WAS CONCERNED ABOUT INLETS, AS THEY ARE MAPPED AS PATCHES IN PARAVIEW)
+  if $( awk -F ";" -v loopj="$(($loopi*2-1))" '{if(NR==loopj) print $8;}' ./data/clamp_23_DataTable.csv )
   then
-    cp -r ./clamp_23_01/zero ./clamp_23_01/$((($loopi-1)*900))
-
-    runApplication mapFields -case ./clamp_23_02 -consistent ./clamp_23_01
-    cp ./clamp_23_01/$((($loopi-1)*900))/phi ./clamp_23_02/$((($loopi-1)*900))/phi
-
-    cp -r ./clamp_23_02/$((($loopi-1)*900)) ./clamp_23_02/clamp_23_02_ltr/$((($loopi-1)*900))
-    runApplication clampPimpleFoam -case ./clamp_23_02/clamp_23_02_ltr
-
-    mv ./clamp_23_02/clamp_23_02_ltr/$((($loopi)*900)) ./clamp_23_02/$((($loopi)*900))
-    rm -r ./clamp_23_02/clamp_23_02_ltr/$((($loopi-1)*900))
-
+    cp -r ./clamp_23_01/0_orig ./clamp_23_01/clamp_23_01_"$wtw"/$((($loopi-2)*900 + 810))
   else
-    # if wtw is same, take latest pU file to right subsubfolder. Otherwise, take 0_orig. I DON'T THINK THAT THIS IS ACTUALLY NEEDED... (WAS CONCERNED ABOUT INLETS, AS THEY ARE MAPPED AS PATCHES IN PARAVIEW)
-    if $( awk -F ";" -v loopj="$(($loopi*2-1))" '{if(NR==loopj) print $8;}' ./data/clamp_23_DataTable.csv )
-    then
-      cp -r ./clamp_23_01/0_orig ./clamp_23_01/clamp_23_01_"$wtw"/$((($loopi-2)*900 + 810))
-    else
-      cp -r ./clamp_23_01/$((($loopi-2)*900)) ./clamp_23_01/clamp_23_01_"$wtw"/$((($loopi-2)*900 + 810))
-    fi
-
-    # run pimpleFoam for one second with dt = 0.001
-    rm ./clamp_23_01/clamp_23_01_"$wtw"/system/controlDict
-    cp -r ./clamp_23_01/system/controlDict_start ./clamp_23_01/clamp_23_01_"$wtw"/system/controlDict
-    runApplication pimpleFoam -case ./clamp_23_01/clamp_23_01_"$wtw"
-    rm ./log.pimpleFoam
-
-    # run pimpleFoam with variable timestep
-    rm ./clamp_23_01/clamp_23_01_"$wtw"/system/controlDict
-    cp -r ./clamp_23_01/system/controlDict ./clamp_23_01/clamp_23_01_"$wtw"/system/controlDict
-    if $( awk -F ";" -v loopj="$(($loopi*2-1))" '{if(NR==loopj) print $7;}' ./data/clamp_23_DataTable.csv )
-    then
-      sed -i 's/adjustTimeStep  yes/adjustTimeStep  no/' ./clamp_23_01/clamp_23_01_"$wtw"/system/controlDict
-    fi
-    runApplication pimpleFoam -case ./clamp_23_01/clamp_23_01_"$wtw"
-
-    mv ./clamp_23_01/clamp_23_01_"$wtw"/$((($loopi-1)*900)) ./clamp_23_01/$((($loopi-1)*900))
-    rm -r ./clamp_23_01/clamp_23_01_"$wtw"/$((($loopi-2)*900+810))
-    rm -r ./clamp_23_01/clamp_23_01_"$wtw"/$((($loopi-2)*900+811))
-
-    runApplication mapFields -case ./clamp_23_02 -consistent ./clamp_23_01
-    cp ./clamp_23_01/$((($loopi-1)*900))/phi ./clamp_23_02/$((($loopi-1)*900))/phi
-
-    cp -r ./clamp_23_02/$((($loopi-1)*900)) ./clamp_23_02/clamp_23_02_"$wtw"/$((($loopi-1)*900))
-    runApplication clampPimpleFoam -case ./clamp_23_02/clamp_23_02_"$wtw"
-
-    mv ./clamp_23_02/clamp_23_02_"$wtw"/$((($loopi)*900)) ./clamp_23_02/$((($loopi)*900))
-    rm -r ./clamp_23_02/clamp_23_02_"$wtw"/$((($loopi-1)*900))
-
+    cp -r ./clamp_23_01/$((($loopi-2)*900)) ./clamp_23_01/clamp_23_01_"$wtw"/$((($loopi-2)*900 + 810))
   fi
+
+  # run pimpleFoam for one second with dt = 0.001
+  rm ./clamp_23_01/clamp_23_01_"$wtw"/system/controlDict
+  cp -r ./clamp_23_01/system/controlDict_start ./clamp_23_01/clamp_23_01_"$wtw"/system/controlDict
+  runApplication pimpleFoam -case ./clamp_23_01/clamp_23_01_"$wtw"
+  rm ./log.pimpleFoam
+
+  # run pimpleFoam with variable timestep
+  rm ./clamp_23_01/clamp_23_01_"$wtw"/system/controlDict
+  cp -r ./clamp_23_01/system/controlDict ./clamp_23_01/clamp_23_01_"$wtw"/system/controlDict
+  if $( awk -F ";" -v loopj="$(($loopi*2-1))" '{if(NR==loopj) print $7;}' ./data/clamp_23_DataTable.csv )
+  then
+    sed -i 's/adjustTimeStep  yes/adjustTimeStep  no/' ./clamp_23_01/clamp_23_01_"$wtw"/system/controlDict
+  fi
+  runApplication pimpleFoam -case ./clamp_23_01/clamp_23_01_"$wtw"
+
+  mv ./clamp_23_01/clamp_23_01_"$wtw"/$((($loopi-1)*900)) ./clamp_23_01/$((($loopi-1)*900))
+  rm -r ./clamp_23_01/clamp_23_01_"$wtw"/$((($loopi-2)*900+810))
+  rm -r ./clamp_23_01/clamp_23_01_"$wtw"/$((($loopi-2)*900+811))
+
+  runApplication mapFields -case ./clamp_23_02 -consistent ./clamp_23_01
+  cp ./clamp_23_01/$((($loopi-1)*900))/phi ./clamp_23_02/$((($loopi-1)*900))/phi
+
+  cp -r ./clamp_23_02/$((($loopi-1)*900)) ./clamp_23_02/clamp_23_02_"$wtw"/$((($loopi-1)*900))
+  runApplication clampPimpleFoam -case ./clamp_23_02/clamp_23_02_"$wtw"
+
+  mv ./clamp_23_02/clamp_23_02_"$wtw"/$((($loopi)*900)) ./clamp_23_02/$((($loopi)*900))
+  rm -r ./clamp_23_02/clamp_23_02_"$wtw"/$((($loopi-1)*900))
 
   rm ./log.mapFields
   rm ./log.pimpleFoam
